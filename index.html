@@ -331,7 +331,7 @@ const metaOf=n=>META[n-1];
 /* load surah n: text, word meanings, translation, word timings (+ built-in audio offsets for the 39 bundled surahs) */
 function getSurah(n){
   if(SURAH.has(n))return Promise.resolve(SURAH.get(n));
-  if(!SLOAD.has(n))SLOAD.set(n,fetch(`s/${pad3(n)}.json`).then(r=>{if(!r.ok)throw new Error("surah "+n);return r.json()}).catch(()=>packed().then(all=>{if(!all[n])throw new Error("surah "+n);return all[n]})).then(d=>{
+  if(!SLOAD.has(n))SLOAD.set(n,fetch(`s/${pad3(n)}.json`).then(r=>{if(!r.ok)throw new Error("s/"+pad3(n)+".json");return r.json().catch(()=>{throw new Error("s/"+pad3(n)+".json")})}).catch(err=>packed().then(all=>{if(!all[n])throw err;return all[n]},()=>{throw err})).then(d=>{
     const m=metaOf(n),bd=BUNDLE[n];
     const s=Object.assign({},m,{ayahs:d.ayahs.map((x,i)=>Object.assign(x,{a:i+1,g:x.g||[],t:x.t||[],au:bd?bd.au[i]:null})),audio:bd?bd.audio:null});
     SURAH.set(n,s);return s}).finally(()=>SLOAD.delete(n)));
@@ -339,7 +339,10 @@ function getSurah(n){
 }
 let PACK=null;const packed=()=>PACK||(PACK=fetch("surahs-all.json").then(r=>{if(!r.ok)throw new Error("pack");return r.json()}).catch(e=>{PACK=null;throw e}));
 const getSurahs=ns=>Promise.all([...new Set(ns)].map(getSurah));
-async function loadVocab(){if(VOCAB)return VOCAB;const r=await fetch("vocab.json");const list=await r.json();
+async function loadVocab(){if(VOCAB)return VOCAB;let list;
+  try{const r=await fetch("vocab.json");if(!r.ok)throw 0;list=await r.json()}
+  catch(e){list=[];for(const s of SURAH.values())for(const a of s.ayahs)for(const w of a.w)list.push([w.replace(WAQF,""),s.n]);
+    if(SURAH.size<6)await Promise.all([1,2,18,36,55,67].map(n=>getSurah(n).catch(()=>null)));for(const s of SURAH.values())for(const a of s.ayahs)for(const w of a.w)list.push([w.replace(WAQF,""),s.n]);console.warn("vocab.json missing: using words from loaded surahs")}
   VOCAB=[];const seen=new Set();for(const[t,s]of list){const n=norm(t);if(n.length<2||seen.has(n))continue;seen.add(n);VOCAB.push({t,n,stem:stem(n),end:n.slice(-2),len:n.length,s})}return VOCAB}
 const rec=id=>RECITERS.find(r=>r.id===id);
 const pad3=n=>String(n).padStart(3,"0");
@@ -654,7 +657,8 @@ const turnOf=k=>Game.players.length===2?k%2:0;
 async function startMatch(){
   Audio.reciter=gameReciter();const tok=(Game.prep=(Game.prep||0)+1);
   mount(h("div",{class:"loading"},h("div",{class:"eq"},h("i"),h("i"),h("i")),h("div",{},S.game==="ayah"?"Picking your verses…":"Picking your surahs…")),false);
-  let rounds;try{rounds=S.game==="ayah"?await pickVerses():await pickSurahs()}catch(e){mount(ErrorView("Couldn't load the Qur'an text. Check your connection and try again."),false);return}
+  let rounds;try{rounds=S.game==="ayah"?await pickVerses():await pickSurahs()}catch(e){const f=e&&e.message&&/\.json$/.test(e.message)?e.message:"";
+    mount(ErrorView(f?`Couldn't load ${f} from this site. Check that the s/ folder was uploaded next to index.html, then try again.`:"Couldn't load the Qur'an text. Check your connection and try again."),false);console.error(e);return}
   if(tok!==Game.prep)return;
   if(!rounds.length){mount(ErrorView("No playable verses in that selection. Pick another surah."),false);return}
   const n=S.mode==="duel"?2:1;
