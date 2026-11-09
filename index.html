@@ -369,7 +369,7 @@ const Audio={ctx:null,chunks:new Map(),pending:new Map(),ayahBuf:new Map(),sourc
   bundled(s,a,rk=this.reciter){return!!(s.audio&&s.audio[rk]&&a.au&&a.au[rk])},
   /* where an ayah's audio lives: {buf, st, en} (seconds inside buf), or {html:url} when only the media-element fallback works */
   async source(s,a,rk=this.reciter){
-    if(this.bundled(s,a,rk)){const[c,st,en]=a.au[rk];return{buf:await this.chunk(s.audio[rk][c]),st,en,local:true}}
+    if(this.bundled(s,a,rk)&&!this.noBundle){const[c,st,en]=a.au[rk];try{return{buf:await this.chunk(s.audio[rk][c]),st,en,local:true}}catch(e){this.noBundle=true}}
     const key=rk+":"+s.n+":"+a.a;
     if(this.ayahBuf.has(key)){const v=this.ayahBuf.get(key);this.ayahBuf.delete(key);this.ayahBuf.set(key,v);return v}
     if(this.pending.has(key))return this.pending.get(key);

@@ -1,6 +1,6 @@
 /* Itmām service worker: app shell offline; surah text and recitations cached on the device as they're used */
 const V="itmam-v6",AUDIO="itmam-audio-v1";
-const SHELL=["./","index.html","meta.json","bundle.json","vocab.json","s/001.json","manifest.webmanifest","icons/icon.svg","icons/icon-192.png","icons/icon-512.png","icons/apple-touch-icon.png"];
+const SHELL=["./","index.html","meta.json","vocab.json","s/001.json","manifest.webmanifest","icons/icon.svg","icons/icon-192.png","icons/icon-512.png","icons/apple-touch-icon.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V&&k!==AUDIO).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 const cacheFirst=(req,name)=>caches.open(name).then(c=>c.match(req).then(hit=>hit||fetch(req).then(r=>{if(r.ok)c.put(req,r.clone());return r})));
