@@ -331,13 +331,17 @@ const metaOf=n=>META[n-1];
 /* load surah n: text, word meanings, translation, word timings (+ built-in audio offsets for the 39 bundled surahs) */
 function getSurah(n){
   if(SURAH.has(n))return Promise.resolve(SURAH.get(n));
-  if(!SLOAD.has(n))SLOAD.set(n,fetch(`s/${pad3(n)}.json`).then(r=>{if(!r.ok)throw new Error("s/"+pad3(n)+".json");return r.json().catch(()=>{throw new Error("s/"+pad3(n)+".json")})}).catch(err=>packed().then(all=>{if(!all[n])throw err;return all[n]},()=>{throw err})).then(d=>{
+  if(!SLOAD.has(n))SLOAD.set(n,surahFile(n).catch(err=>packed().then(all=>{if(!all[n])throw err;return all[n]},()=>{throw err})).then(d=>{
     const m=metaOf(n),bd=BUNDLE[n];
     const s=Object.assign({},m,{ayahs:d.ayahs.map((x,i)=>Object.assign(x,{a:i+1,g:x.g||[],t:x.t||[],au:bd?bd.au[i]:null})),audio:bd?bd.audio:null});
     SURAH.set(n,s);return s}).finally(()=>SLOAD.delete(n)));
   return SLOAD.get(n);
 }
 let PACK=null;const packed=()=>PACK||(PACK=fetch("surahs-all.json").then(r=>{if(!r.ok)throw new Error("pack");return r.json()}).catch(e=>{PACK=null;throw e}));
+/* surah files may sit in s/ (normal) or at the site root (if they were uploaded without the folder) */
+async function surahFile(n){const name=pad3(n)+".json";
+  for(const u of[`s/${name}`,name]){try{const r=await fetch(u);if(!r.ok)continue;return await r.json()}catch(e){}}
+  throw new Error(`s/${name}`)}
 const getSurahs=ns=>Promise.all([...new Set(ns)].map(getSurah));
 async function loadVocab(){if(VOCAB)return VOCAB;let list;
   try{const r=await fetch("vocab.json");if(!r.ok)throw 0;list=await r.json()}
