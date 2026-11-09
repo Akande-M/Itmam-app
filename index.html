@@ -94,7 +94,11 @@ input[type=text]::placeholder{color:var(--faint)}
 .rec:first-child{border-top:0}
 .rec .ck{width:18px;color:var(--gold);font-weight:700}
 .rec[aria-checked="true"]{background:var(--gold-soft)}
-.rec .pv{margin-inline-start:auto;white-space:nowrap;flex:none;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--surface)}
+.rec .pv{margin-inline-start:auto;flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--gold);display:grid;place-items:center;cursor:pointer;transition:background .2s,color .2s}
+.rec .pv:hover{border-color:var(--gold)}
+.rec .pv.on{background:var(--gold);color:var(--on-gold);border-color:var(--gold)}
+.cardhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.btn.sm{min-height:38px;padding:0 20px;font-size:14px;border-radius:999px;display:inline-flex;align-items:center;gap:6px}
 .btn{min-height:var(--tap);border-radius:var(--r);border:0;background:var(--gold);color:var(--on-gold);font-weight:700;font-size:16px;cursor:pointer}
 .btn:disabled{opacity:.45;cursor:default}
 .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
@@ -472,12 +476,10 @@ function segBox(obj,key,opts,onChange){const el=h("div",{class:"seg",role:"group
 /* ---------- Home ---------- */
 function Home(){
   applyKid();
-  const games=h("div",{class:"modes"}),scopeCard=h("div",{class:"card"}),modes=h("div",{class:"modes"}),namesBox=h("div"),sum=h("div",{class:"summary"});
-  const drawSum=()=>{const r=gameReciter();sum.replaceChildren(h("span",{class:"pill"},LEVEL[S.level]),h("span",{class:"pill"},rec(r).name),S.kid?h("span",{class:"pill"},"Kid-friendly"):null,h("button",{type:"button",onclick:()=>go("settings")},"Change"),
-    r!==S.reciter?h("div",{class:"hint",style:"flex-basis:100%"},`${rec(S.reciter).name} has no word timings, so Finish the Ayah uses Alafasy.`):null)};
+  const games=h("div",{class:"modes"}),scopeCard=h("div",{class:"card"}),modes=h("div",{class:"modes"}),namesBox=h("div");
   const drawGames=()=>games.replaceChildren(
-    h("button",{class:"mode","aria-pressed":String(S.game==="ayah"),onclick:()=>{S.game="ayah";save();drawGames();drawScope();drawSum()}},h("b",{},"Finish the Ayah"),h("span",{},"The recitation stops at the missing word. Pick it to hear the rest.")),
-    h("button",{class:"mode","aria-pressed":String(S.game==="surah"),onclick:()=>{S.game="surah";save();drawGames();drawScope();drawSum()}},h("b",{},"Guess the Surah"),h("span",{},"Hear 1–3 ayahs and name the surah. 15 seconds each.")));
+    h("button",{class:"mode","aria-pressed":String(S.game==="ayah"),onclick:()=>{S.game="ayah";save();drawGames();drawScope()}},h("b",{},"Finish the Ayah"),h("span",{},"The recitation stops at the missing word. Pick it to hear the rest.")),
+    h("button",{class:"mode","aria-pressed":String(S.game==="surah"),onclick:()=>{S.game="surah";save();drawGames();drawScope()}},h("b",{},"Guess the Surah"),h("span",{},"Hear 1–3 ayahs and name the surah. 15 seconds each.")));
   const drawModes=()=>{modes.replaceChildren(
     h("button",{class:"mode","aria-pressed":String(S.mode==="solo"),onclick:()=>{S.mode="solo";save();drawModes()}},h("b",{},MODE.solo),h("span",{},"10 rounds. Beat your own score.")),
     h("button",{class:"mode","aria-pressed":String(S.mode==="duel"),onclick:()=>{S.mode="duel";save();drawModes()}},h("b",{},MODE.duel),h("span",{},"Take turns on 10 rounds. Highest score wins.")));
@@ -491,19 +493,24 @@ function Home(){
     const sel=h("select",{id:"surah","aria-label":"Surah"},...META.map(s=>h("option",{value:s.n},`${s.n}. ${s.name} · ${s.en} (${s.c} ayahs)`)));
     sel.value=S.surah;sel.onchange=()=>{S.surah=+sel.value;save()};
     const wrap=h("div",{hidden:S.scope!=="surah"},sel);
-    const sh=()=>S.scope==="all"?"A random surah from a random ayah, 5 ayahs in order, then another random surah, until 10 rounds.":"10 ayahs from this surah, in order. The missing word falls in the middle or at the end.";hint.textContent=sh();
+    const sh=()=>S.scope==="all"?`${BAND_TXT()} (set by your level): a random surah from a random ayah, 5 ayahs in order, then another random surah, until 10 rounds.`:"10 ayahs from this surah, in order. The missing word falls in the middle or at the end.";hint.textContent=sh();
     scopeCard.replaceChildren(h("div",{class:"label"},"Verses from"),segBox(S,"scope",[["all","All surahs"],["surah","One surah"]],()=>{wrap.hidden=S.scope!=="surah";hint.textContent=sh()}),wrap,hint)};
-  drawSum();drawGames();drawModes();drawScope();
-  return h("section",{class:"screen"},brand(),sum,
-    h("div",{class:"card"},h("div",{class:"label"},"Mode"),games),
+  drawGames();drawModes();drawScope();
+  return h("section",{class:"screen"},brand(),
+    h("div",{class:"card"},h("div",{class:"cardhead"},h("div",{class:"label"},"Mode"),h("button",{class:"btn sm",id:"start",onclick:()=>{Audio.unlock();Audio.stop();if(S.game==="ayah"&&gameReciter()!==S.reciter)toast(`${rec(S.reciter).name} has no word timings, so Finish the Ayah uses Alafasy`);startMatch()}},icon(I.play),"Start")),games),
     h("div",{class:"card"},h("div",{class:"label"},"Players"),modes,namesBox),
-    scopeCard,
-    h("button",{class:"btn",id:"start",onclick:()=>{Audio.unlock();Audio.stop();startMatch()}},"Start"));
+    scopeCard);
 }
 
 /* ---------- Settings ---------- */
 let Draft=null,installEvt=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;if(TAB==="settings"&&!app.querySelector(".play"))go("settings")});
+let SAMPLE=null;
+function sampleBtn(r){const b=h("button",{class:"pv"+(SAMPLE===r.id?" on":""),type:"button","aria-label":`Hear ${r.name}`},icon(SAMPLE===r.id?I.pause:I.play));
+  b.onclick=async()=>{Audio.unlock();const wasMe=SAMPLE===r.id;Audio.stop();SAMPLE=null;document.querySelectorAll(".rec .pv").forEach(x=>{x.classList.remove("on");x.replaceChildren(icon(I.play))});
+    if(wasMe)return;SAMPLE=r.id;b.classList.add("on");b.replaceChildren(icon(I.pause));
+    const prev=Audio.reciter;Audio.reciter=r.id;try{const s=await getSurah(1);await Audio.play(s,s.ayahs[1])}finally{Audio.reciter=prev;if(SAMPLE===r.id){SAMPLE=null;b.classList.remove("on");b.replaceChildren(icon(I.play))}}};
+  return b}
 function Settings(){
   if(!Draft)Draft={level:S.level,reciter:S.reciter,kid:S.kid,translation:S.translation};
   const D=Draft;
@@ -516,7 +523,7 @@ function Settings(){
     const pick=()=>{D.reciter=r.id;drawRec();upd()};
     return h("div",{class:"rec",role:"radio",tabindex:0,"aria-checked":String(D.reciter===r.id),onclick:e=>{if(!e.target.closest(".pv"))pick()},onkeydown:e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();pick()}}},
       h("span",{class:"ck"},D.reciter===r.id?"✓":""),h("span",{class:"rn"},r.name,r.timed?null:h("small",{},"Guess the Surah and Quran only")),
-      h("button",{class:"pv",type:"button",onclick:()=>{Audio.unlock();const prev=Audio.reciter;Audio.reciter=r.id;getSurah(1).then(s=>Audio.play(s,s.ayahs[1])).finally(()=>{Audio.reciter=prev})}},"▶ Sample"))}));
+      sampleBtn(r))}));
   drawRec();
   const sw=(key,label,sub)=>{const b=h("button",{class:"switch",role:"switch","aria-checked":String(!!D[key]),"aria-label":label,onclick:()=>{D[key]=!D[key];b.setAttribute("aria-checked",String(D[key]));upd()}});
     return h("div",{class:"toggle"},h("div",{},h("div",{},label),h("div",{class:"hint"},sub)),b)};
@@ -531,7 +538,7 @@ function Settings(){
   upd();
   return h("section",{class:"screen"},h("div",{class:"pagehead"},h("h1",{},"Settings"),themeBtn()),
     h("div",{class:"card"},h("div",{class:"label"},"Level"),segBox(D,"level",[["easy","Easy"],["medium","Medium"],["hard","Hard"]],upd),
-      h("div",{class:"hint"},"Finish the Ayah: Easy keeps ayahs short with different-looking options; Medium makes options rhyme; Hard hides the rest of the ayah and every option rhymes. Guess the Surah: harder levels use nearby surahs as options.")),
+      h("div",{class:"hint"},"Hard: Juz 1–10 · Medium: Juz 11–20 · Easy: Juz 21–30. This sets where verses come from in All surahs and Guess the Surah. Harder levels also make the answer options closer: rhyming words, the rest of the ayah hidden, neighbouring surahs.")),
     h("div",{class:"card"},h("div",{class:"label"},"Reciter"),recList),
     h("div",{class:"card"},sw("kid","Kid-friendly","Bigger text, gold instead of red"),sw("translation","Show translation in the Quran","Saheeh International, under each ayah")),
     h("div",{class:"savebar"},saveBtn,dirtyNote),
@@ -606,6 +613,12 @@ function pickBlank(a){
   const z=zones[rand(zones.length)];return z[rand(z.length)];
 }
 const RUN=5;
+const BANDS={hard:[1,10],medium:[11,20],easy:[21,30]};
+const BAND_TXT=()=>{const[a,b]=BANDS[S.level];return`Juz ${a}–${b}`};
+/* juz of an ayah, from the surah's juz transitions [[juz, firstAyah], ...] */
+function juzOf(m,a){let j=m.j[0][0];for(const[jz,first]of m.j){if(a>=first)j=jz;else break}return j}
+const inBand=(m,a)=>{const[lo,hi]=BANDS[S.level],j=juzOf(m,a);return j>=lo&&j<=hi};
+const bandSurahs=()=>{const[lo,hi]=BANDS[S.level];return META.filter(m=>m.j.some(([j])=>j>=lo&&j<=hi))};
 async function pickVerses(progress){
   const picks=[];
   if(S.scope==="surah"){
@@ -616,12 +629,14 @@ async function pickVerses(progress){
     picks.sort((x,y)=>x.a.a-y.a.a);
   }else{
     // runs of 5 consecutive ayahs: a random surah from a random ayah, then another random surah, until 10 rounds
-    const order=shuffle(META.map(m=>m.n));let oi=0;
-    while(picks.length<ROUNDS&&oi<order.length){
-      const n=order[oi++];const m=metaOf(n);progress&&progress(picks.length);
+    // only surahs (and ayahs) inside the level's juz band
+    const order=shuffle(bandSurahs().map(m=>m.n));let oi=0;
+    while(picks.length<ROUNDS&&oi<order.length*2){
+      const n=order[oi++%order.length];const m=metaOf(n);progress&&progress(picks.length);
       const s=await getSurah(n);
-      let start=rand(Math.max(1,m.c-RUN+1));let run=0;
-      for(let k=start;k<s.ayahs.length&&run<RUN&&picks.length<ROUNDS;k++){const a=s.ayahs[k];const i=pickBlank(a);if(i==null)continue;picks.push({s,a,i});run++}
+      const idx=s.ayahs.map((a,k)=>k).filter(k=>inBand(m,k+1));if(!idx.length)continue;
+      let start=idx[rand(Math.max(1,idx.length-RUN+1))];let run=0;
+      for(let k=start;k<s.ayahs.length&&inBand(m,k+1)&&run<RUN&&picks.length<ROUNDS;k++){const a=s.ayahs[k];if(picks.some(x=>x.a===a))continue;const i=pickBlank(a);if(i==null)continue;picks.push({s,a,i});run++}
     }
   }
   await loadVocab();
@@ -641,15 +656,18 @@ function distractors(answer,surahN,ayah){
 }
 /* ---------- Guess the Surah: 10 different surahs from all 114, 1–3 ayahs each ---------- */
 async function pickSurahs(){
-  const chosen=shuffle(META.map(m=>m.n)).slice(0,ROUNDS);
-  const ss=await getSurahs(chosen);
-  return chosen.map(n=>{const s=SURAH.get(n);
-    const start=rand(Math.max(1,s.ayahs.length-2));const list=[s.ayahs[start]];let words=list[0].w.length;
-    while(list.length<3&&words<18&&s.ayahs[start+list.length]){const a=s.ayahs[start+list.length];list.push(a);words+=a.w.length}
-    const others=META.filter(x=>x.n!==n);let wrong;
-    if(S.level==="hard")wrong=others.slice().sort((x,y)=>Math.abs(x.n-n)-Math.abs(y.n-n)+(Math.random()-.5)).slice(0,3);
-    else if(S.level==="medium")wrong=shuffle(others.filter(x=>Math.abs(x.n-n)<=30)).slice(0,3);
-    else wrong=shuffle(others).slice(0,3);
+  const band=bandSurahs();
+  // 10 different surahs when the band has enough; Juz 1–10 has only 9, so one surah comes back with a different passage
+  let chosen=shuffle(band.map(m=>m.n));while(chosen.length<ROUNDS)chosen=chosen.concat(shuffle(band.map(m=>m.n)));chosen=chosen.slice(0,ROUNDS);
+  await getSurahs(chosen);const usedStart=new Set();
+  return chosen.map(n=>{const s=SURAH.get(n),m=metaOf(n);
+    const idx=s.ayahs.map((a,k)=>k).filter(k=>inBand(m,k+1));let start=idx[rand(Math.max(1,idx.length-2))];
+    for(let t=0;t<5&&usedStart.has(n+":"+start);t++)start=idx[rand(Math.max(1,idx.length-2))];usedStart.add(n+":"+start);
+    const list=[s.ayahs[start]];let words=list[0].w.length;
+    while(list.length<3&&words<18&&s.ayahs[start+list.length]&&inBand(m,start+list.length+1)){const a=s.ayahs[start+list.length];list.push(a);words+=a.w.length}
+    const pool=band.filter(x=>x.n!==n),others=META.filter(x=>x.n!==n);let wrong;
+    if(S.level==="hard")wrong=pool.slice().sort((x,y)=>Math.abs(x.n-n)-Math.abs(y.n-n)+(Math.random()-.5)).slice(0,3);
+    else wrong=shuffle(pool).slice(0,3);
     if(wrong.length<3)wrong=wrong.concat(shuffle(others.filter(x=>!wrong.includes(x))).slice(0,3-wrong.length));
     return{kind:"surah",s,list,answer:n,wrong:wrong.map(x=>x.n)};
   });
@@ -684,7 +702,7 @@ function confirmQuit(){
   const scrim=h("div",{class:"scrim",onclick:e=>{if(e.target===scrim)close()}},h("div",{class:"dialog",role:"alertdialog","aria-modal":"true","aria-labelledby":"qt"},
     h("h2",{id:"qt"},"End this session?"),h("p",{},`You're on round ${Game.k+1} of ${Game.rounds.length}. Your scores so far won't be kept.`),
     h("div",{class:"row2"},h("button",{class:"btn ghost",id:"keep",onclick:close},"Keep playing"),h("button",{class:"btn danger",id:"endit",onclick:()=>{scrim.remove();endSession()}},"End session"))));
-  document.body.append(scrim);setTimeout(()=>$("#keep").focus(),30);
+  document.body.append(scrim);setTimeout(()=>{const k=$("#keep");if(k)k.focus()},30);
 }
 function ErrorView(msg){return h("section",{class:"screen"},brand(),h("div",{class:"card"},msg),h("button",{class:"btn",onclick:()=>go("home")},"Back to home"))}
 
