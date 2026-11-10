@@ -328,7 +328,11 @@ const PARTICLES=new Set(["و","ف","في","من","الي","علي","عن","ان"
 /* ---------- data: the whole Qur'an, one small file per surah, loaded when needed ---------- */
 let META=[],RECITERS=[],BUNDLE={},VOCAB=null;const SURAH=new Map(),SLOAD=new Map();
 async function loadData(){
-  const[m,b]=await Promise.all([fetch("meta.json").then(r=>{if(!r.ok)throw 0;return r.json()}),fetch("bundle.json").then(r=>r.ok?r.json():{}).catch(()=>({}))]);
+  const getMeta=u=>fetch(u,{cache:"no-store"}).then(r=>{if(!r.ok)throw 0;return r.json()});
+  const fresh=m=>m&&m.surahs&&m.surahs.length===114&&m.surahs.every(x=>Array.isArray(x.j)&&x.j.length);
+  let[m,b]=await Promise.all([getMeta("meta.json"),fetch("bundle.json").then(r=>r.ok?r.json():{}).catch(()=>({}))]);
+  if(!fresh(m)){try{const m2=await getMeta("meta.json?v="+Date.now());if(fresh(m2))m=m2}catch(e){}}
+  if(!fresh(m))for(const x of m.surahs)if(!Array.isArray(x.j)||!x.j.length)x.j=[[0,1]]; // old meta.json: levels can't filter by juz, so every surah stays playable
   META=m.surahs;RECITERS=m.reciters;BUNDLE=b;
 }
 const metaOf=n=>META[n-1];
@@ -617,8 +621,8 @@ const BANDS={hard:[1,10],medium:[11,20],easy:[21,30]};
 const BAND_TXT=()=>{const[a,b]=BANDS[S.level];return`Juz ${a}–${b}`};
 /* juz of an ayah, from the surah's juz transitions [[juz, firstAyah], ...] */
 function juzOf(m,a){let j=m.j[0][0];for(const[jz,first]of m.j){if(a>=first)j=jz;else break}return j}
-const inBand=(m,a)=>{const[lo,hi]=BANDS[S.level],j=juzOf(m,a);return j>=lo&&j<=hi};
-const bandSurahs=()=>{const[lo,hi]=BANDS[S.level];return META.filter(m=>m.j.some(([j])=>j>=lo&&j<=hi))};
+const inBand=(m,a)=>{const[lo,hi]=BANDS[S.level],j=juzOf(m,a);return j===0||(j>=lo&&j<=hi)};
+const bandSurahs=()=>{const[lo,hi]=BANDS[S.level];return META.filter(m=>m.j.some(([j])=>j===0||(j>=lo&&j<=hi)))};
 async function pickVerses(progress){
   const picks=[];
   if(S.scope==="surah"){
@@ -680,7 +684,7 @@ async function startMatch(){
   Audio.reciter=gameReciter();const tok=(Game.prep=(Game.prep||0)+1);
   mount(h("div",{class:"loading"},h("div",{class:"eq"},h("i"),h("i"),h("i")),h("div",{},S.game==="ayah"?"Picking your verses…":"Picking your surahs…")),false);
   let rounds;try{rounds=S.game==="ayah"?await pickVerses():await pickSurahs()}catch(e){const f=e&&e.message&&/\.json$/.test(e.message)?e.message:"";
-    mount(ErrorView(f?`Couldn't load ${f} from this site. Check that the s/ folder was uploaded next to index.html, then try again.`:"Couldn't load the Qur'an text. Check your connection and try again."),false);console.error(e);return}
+    mount(ErrorView(f?`Couldn't load ${f} from this site. Check that the s/ folder was uploaded next to index.html, then try again.`:"Couldn't start the game. Check your connection and try again. ("+String(e&&e.message||e).slice(0,120)+")"),false);console.error(e);return}
   if(tok!==Game.prep)return;
   if(!rounds.length){mount(ErrorView("No playable verses in that selection. Pick another surah."),false);return}
   const n=S.mode==="duel"?2:1;
