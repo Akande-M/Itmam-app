@@ -233,7 +233,7 @@ input[type=text]::placeholder{color:var(--faint)}
 .feature{gap:8px}
 .feature .ftitle{font-size:18px;font-weight:700}
 .feature .btn.sm{align-self:flex-start;margin-top:4px}
-.qtabs{max-width:260px}
+.qtabs{width:100%}
 .qlist{display:flex;flex-direction:column;gap:12px}
 .juzhead{display:flex;align-items:center;gap:10px;padding:6px 2px 0}
 .juzhead .hint{margin-left:auto}
@@ -255,6 +255,13 @@ input[type=text]::placeholder{color:var(--faint)}
 .lp{margin:0;line-height:1.65}
 .steps,.bul{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;line-height:1.55}
 .steps li::marker{color:var(--gold);font-weight:700}
+.sheader{width:100%;max-width:460px;margin:2px auto 0}
+.sheader svg{display:block;width:100%;height:auto}
+.sheader text{font-family:var(--quran);text-anchor:middle;fill:var(--text);direction:rtl}
+.sheader .sn{font-size:25px;fill:var(--gold)}
+.sheader .mt{font-size:10px;fill:var(--muted)}
+.sheader .mn{font-size:13px;fill:var(--text)}
+.sinfo .meta2{font-size:12px;color:var(--faint)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 /* ---- v5: floating nav, settings, Quran reader, modal ---- */
 body.has-nav .wrap{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
@@ -301,7 +308,8 @@ body.has-nav .wrap{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 .shead{text-align:center;display:flex;flex-direction:column;gap:6px;padding:8px 0 4px}
 .shead .arn{font-family:var(--quran);font-size:34px;color:var(--gold);line-height:1.6}
 .bism{font-family:var(--quran);font-size:24px;text-align:center;direction:rtl;line-height:2;padding:4px 0}
-.player{position:sticky;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:15;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.player{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));width:min(428px,calc(100% - 32px));z-index:40;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:calc(var(--r) + 6px);background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.28);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.reader-pad{height:96px}
 .player .play{width:44px;height:44px;border-radius:50%;border:0;background:var(--gold);color:var(--on-gold);display:grid;place-items:center;cursor:pointer;flex:none}
 .player .pinfo{display:flex;flex-direction:column;min-width:0;flex:1}
 .player .pinfo b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -623,22 +631,45 @@ function QuranList(){
   const tabs=h("div",{class:"seg qtabs",role:"tablist"});
   const match=s=>{const q=QFILTER.trim().toLowerCase();return!q||String(s.n)===q||s.name.toLowerCase().includes(q)||s.en.toLowerCase().includes(q)||s.ar.includes(q)};
   const row=(s,sub,at)=>h("button",{class:"srow",type:"button",onclick:()=>{Audio.unlock();openReader(s.n,at)}},
-    h("span",{class:"snum"},s.n),h("span",{class:"sinfo"},h("b",{},s.name),h("span",{},sub)),h("span",{class:"sar",lang:"ar"},s.ar));
+    h("span",{class:"snum"},s.n),h("span",{class:"sinfo"},h("b",{},s.name),...[].concat(sub).map((t,i)=>h("span",{class:i?"meta2":null},t))),h("span",{class:"sar",lang:"ar"},s.ar));
   const draw=()=>{tabs.replaceChildren(...[["surah","Surah"],["juz","Juz"]].map(([v,l])=>h("button",{type:"button",role:"tab","aria-selected":String(QTAB===v),"aria-pressed":String(QTAB===v),onclick:()=>{QTAB=v;draw()}},l)));
     inp.placeholder=QTAB==="surah"?"Search surah name or number":"Search a surah inside the juz";
     if(QTAB==="surah"){const rows=META.filter(match);
-      list.replaceChildren(rows.length?h("div",{class:"slist"},...rows.map(s=>row(s,`${s.en} · ${s.rev==="Mecca"?"Makki":"Madani"} · ${s.c} ayahs`))):h("div",{class:"hint",style:"padding:16px"},"No surah matches that search."));return}
+      list.replaceChildren(rows.length?h("div",{class:"slist"},...rows.map(s=>row(s,[s.en,`${s.rev==="Mecca"?"Makki":"Madani"} · ${s.c} ayahs`]))):h("div",{class:"hint",style:"padding:16px"},"No surah matches that search."));return}
     const jm=juzMap(),out=[];
     for(const[j,parts]of jm){const ps=parts.filter(x=>match(x.s));if(!ps.length)continue;
       out.push(h("div",{class:"juzhead"},h("span",{class:"jnum"},j),h("b",{},`Juz ${j}`),h("span",{class:"hint"},`${parts.length} surah${parts.length>1?"s":""}`)),
-        h("div",{class:"slist"},...ps.map(x=>row(x.s,x.from===1&&x.to===x.s.c?`Whole surah · ${x.s.c} ayahs`:`Ayahs ${x.from}–${x.to}`,x.from))))}
+        h("div",{class:"slist"},...ps.map(x=>row(x.s,`${x.s.en} · `+(x.from===1&&x.to===x.s.c?`whole surah, ${x.s.c} ayahs`:`ayahs ${x.from}–${x.to}`),x.from))))}
     list.replaceChildren(...(out.length?out:[h("div",{class:"hint",style:"padding:16px"},"No surah matches that search.")]))};
   inp.oninput=()=>{QFILTER=inp.value;draw()};draw();
   return h("section",{class:"screen"},h("div",{class:"pagehead"},h("h1",{},"The Qur'an"),themeBtn()),tabs,h("label",{class:"search"},icon(I.search),inp),list);
 }
+/* surah header in the style of a printed muṣḥaf: ornamental frame, the name in a central cartouche,
+   medallions with the ayah count (left) and Makki/Madani (right). Original drawing, coloured from the theme. */
+function surahHeader(s){
+  const name=s.ar.replace(/^\s*سُ?و?ْ?رَ?ةُ?\s*/,"");
+  const star=(cx,cy,r)=>`<g transform="translate(${cx} ${cy})"><rect x="${-r}" y="${-r}" width="${2*r}" height="${2*r}"/><rect x="${-r}" y="${-r}" width="${2*r}" height="${2*r}" transform="rotate(45)"/></g>`;
+  const medal=(cx,top,bottom)=>`<g>${star(cx,50,25)}<circle cx="${cx}" cy="50" r="22" fill="var(--surface)"/><circle cx="${cx}" cy="50" r="18.5" fill="none" stroke-dasharray="1.5 2.5"/>
+    <text x="${cx}" y="${bottom?46:54}" class="mt">${top}</text>${bottom?`<text x="${cx}" y="62" class="mn">${bottom}</text>`:""}</g>`;
+  const svgTxt=`<svg viewBox="0 0 360 100" role="img" aria-label="Surah ${s.name}" xmlns="http://www.w3.org/2000/svg">
+  <defs><pattern id="hp${s.n}" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M6 1.5 10.5 6 6 10.5 1.5 6Z" fill="none" stroke="var(--gold)" stroke-width=".7" opacity=".7"/><circle cx="0" cy="0" r="1" fill="var(--gold)" opacity=".5"/><circle cx="12" cy="12" r="1" fill="var(--gold)" opacity=".5"/></pattern></defs>
+  <g fill="none" stroke="var(--gold)" stroke-width="1.2">
+    <rect x="3" y="3" width="354" height="94" rx="5" fill="url(#hp${s.n})"/>
+    <rect x="11" y="11" width="338" height="78" rx="3" fill="var(--surface)"/>
+    <rect x="14" y="14" width="332" height="72" rx="2" stroke-width=".6"/>
+    <g fill="var(--gold-soft)" stroke-width=".9">${star(52,50,25)}${star(308,50,25)}</g>
+    <path d="M110 24 H250 C262 24 270 36 282 50 C270 64 262 76 250 76 H110 C98 76 90 64 78 50 C90 36 98 24 110 24 Z" fill="var(--gold-soft)"/>
+    <path d="M114 29 H246 C256 29 263 39 272 50 C263 61 256 71 246 71 H114 C104 71 97 61 88 50 C97 39 104 29 114 29 Z" fill="var(--surface)" stroke-width=".7"/>
+    <path d="M78 50 H66 M282 50 H294" stroke-width=".9"/>
+  </g>
+  <g fill="none" stroke="var(--gold)" stroke-width=".9">${medal(52,"آياتها",arNum(s.ayahs.length))}${medal(308,s.rev==="Mecca"?"مكية":"مدنية","")}</g>
+  <text x="180" y="59" class="sn">${name}</text>
+</svg>`;
+  const el=h("div",{class:"sheader",lang:"ar"});el.innerHTML=svgTxt;return el;
+}
 let READER_BACK=null;
-function openReader(n,at){READER_BACK=TAB==="resources"?()=>mount(Cleanliness(),true):null;mount(h("div",{class:"loading"},"Opening the surah…"),true);
-  Promise.all([getSurah(n),n!==1?getSurah(1):null]).then(([s])=>{mount(SurahReader(s),true);if(at>1){const c=document.querySelectorAll(".ay")[at-1];if(c){c.scrollIntoView({block:"center"});c.classList.add("cur");setTimeout(()=>c.classList.remove("cur"),1800)}}},()=>mount(h("section",{class:"screen"},h("div",{class:"card"},"Couldn't load this surah. Check your connection and try again."),h("button",{class:"btn",onclick:()=>go("quran")},"Back")),true))}
+function openReader(n,at){READER_BACK=TAB==="resources"?()=>mount(Cleanliness(),true):null;mount(h("div",{class:"loading"},"Opening the surah…"),false);
+  Promise.all([getSurah(n),n!==1?getSurah(1):null]).then(([s])=>{mount(SurahReader(s),false);if(at>1){const c=document.querySelectorAll(".ay")[at-1];if(c){c.scrollIntoView({block:"center"});c.classList.add("cur");setTimeout(()=>c.classList.remove("cur"),1800)}}},()=>mount(h("section",{class:"screen"},h("div",{class:"card"},"Couldn't load this surah. Check your connection and try again."),h("button",{class:"btn",onclick:()=>go("quran")},"Back")),true))}
 const Reader={playing:false,paused:false,idx:-1,surah:null,onstate:null,
   stop(){this.playing=false;this.paused=false;this.idx=-1;Audio.stop();if(Audio.ctx&&Audio.ctx.state==="suspended")Audio.ctx.resume();this.onstate&&this.onstate()}};
 function SurahReader(s){
@@ -649,7 +680,7 @@ function SurahReader(s){
     cards.push(c);ayahsBox.append(c)});
   const pbtn=h("button",{class:"play",type:"button","aria-label":"Play surah"},icon(I.play));
   const pinfo=h("div",{class:"pinfo"},h("b",{},s.name),h("span",{},rec(rk).name));
-  const trBtn=h("button",{class:"tog",type:"button",onclick:()=>{S.translation=!S.translation;save();Reader.stop();mount(SurahReader(s),true)}},S.translation?"Hide translation":"Show translation");
+  const trBtn=h("button",{class:"tog",type:"button",onclick:()=>{S.translation=!S.translation;save();Reader.stop();mount(SurahReader(s),false)}},S.translation?"Hide translation":"Show translation");
   const notice=h("div",{class:"notice"});
   const setState=()=>{pbtn.replaceChildren(icon(Reader.playing&&!Reader.paused?I.pause:I.play));pbtn.setAttribute("aria-label",Reader.playing&&!Reader.paused?"Pause":"Play");
     cards.forEach((c,i)=>c.classList.toggle("cur",i===Reader.idx));
@@ -672,8 +703,8 @@ function SurahReader(s){
   setState();
   return h("section",{class:"screen"},
     h("div",{class:"reader-top"},back,h("div",{class:"t"},s.name,h("small",{},`${s.en} · ${s.ayahs.length} ayahs`)),themeBtn()),
-    h("div",{class:"shead"},h("div",{class:"arn",lang:"ar"},s.ar),h("div",{class:"hint"},`${s.rev==="Mecca"?"Makki":"Madani"} · Surah ${s.n}`)),
-    bism,ayahsBox,notice,h("div",{class:"player"},pbtn,pinfo,trBtn));
+    surahHeader(s),h("div",{class:"hint",style:"text-align:center"},`${s.en} · ${s.rev==="Mecca"?"Makki":"Madani"} · Surah ${s.n} · ${s.ayahs.length} ayahs`),
+    bism,ayahsBox,notice,h("div",{class:"reader-pad"}),h("div",{class:"player"},pbtn,pinfo,trBtn));
 }
 
 /* ---------- Finish the Ayah: verse + blank selection ---------- */
