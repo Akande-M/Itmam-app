@@ -38,15 +38,15 @@
 @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
   --bg:#F4F6FA; --surface:#FFFFFF; --surface-2:#EDF1F7; --line:#DCE3EE; --line-strong:#C3CDDC;
   --text:#141A24; --muted:#5A6577; --faint:#8D97A6;
-  --gold:#4169E1; --gold-soft:rgba(65,105,225,.10); --on-gold:#FFFFFF;
+  --gold:#1A3A7C; --gold-soft:rgba(26,58,124,.09); --on-gold:#FFFFFF;
   --ok:#1D8A57; --ok-soft:rgba(29,138,87,.12); --bad:#C0453A; --bad-soft:rgba(192,69,58,.10); --hard:#C2611F;
-  --p1:#4169E1; --p2:#B86E0B; color-scheme:light}}
+  --p1:#1A3A7C; --p2:#B86E0B; color-scheme:light}}
 :root[data-theme="light"]{
   --bg:#F4F6FA; --surface:#FFFFFF; --surface-2:#EDF1F7; --line:#DCE3EE; --line-strong:#C3CDDC;
   --text:#141A24; --muted:#5A6577; --faint:#8D97A6;
-  --gold:#4169E1; --gold-soft:rgba(65,105,225,.10); --on-gold:#FFFFFF;
+  --gold:#1A3A7C; --gold-soft:rgba(26,58,124,.09); --on-gold:#FFFFFF;
   --ok:#1D8A57; --ok-soft:rgba(29,138,87,.12); --bad:#C0453A; --bad-soft:rgba(192,69,58,.10); --hard:#C2611F;
-  --p1:#4169E1; --p2:#B86E0B; color-scheme:light}
+  --p1:#1A3A7C; --p2:#B86E0B; color-scheme:light}
 :root.kid{--r:18px; --tap:60px; --ayah:clamp(28px,7.6vw,35px); --opt:clamp(29px,8vw,35px)}
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -268,6 +268,9 @@ input[type=text]::placeholder{color:var(--faint)}
 .sinfo2 b{font-size:16px}
 .sinfo2 span{font-size:13px;color:var(--muted)}
 .bism.cur{color:var(--gold)}
+.rsticky{position:sticky;top:0;z-index:25;background:var(--bg);display:flex;flex-direction:column;gap:10px;padding-top:env(safe-area-inset-top,0px);padding-bottom:10px;margin-top:calc(-1 * env(safe-area-inset-top,0px));border-bottom:1px solid var(--line)}
+.rsticky .reader-top{position:static}
+.ay,.bism{scroll-margin-top:290px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 /* ---- v5: floating nav, settings, Quran reader, modal ---- */
 body.has-nav .wrap{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
@@ -708,11 +711,12 @@ function SurahReader(s){
   const f=SURAH.get(1);const bism=s.n!==1&&s.n!==9&&f?h("div",{class:"bism",lang:"ar"},f.ayahs[0].w.join(" ")):null;Reader.bism=bism;
   setState();
   return h("section",{class:"screen"},
+    h("div",{class:"rsticky"},
     h("div",{class:"reader-top"},back,h("div",{class:"t"},s.name,h("small",{},`${s.en} · ${s.ayahs.length} ayahs`)),themeBtn()),
     surahHeader(s),h("div",{class:"snav"},
       h("button",{class:"iconbtn",type:"button","aria-label":s.n>1?`Previous: ${metaOf(s.n-1).name}`:"No previous surah",disabled:s.n<=1,onclick:()=>{Reader.stop();openReader(s.n-1)}},icon(I.back)),
       h("div",{class:"sinfo2"},h("b",{},s.en),h("span",{},`${s.rev==="Mecca"?"Makki":"Madani"} · Surah ${s.n} · ${s.ayahs.length} ayahs`)),
-      h("button",{class:"iconbtn",type:"button","aria-label":s.n<114?`Next: ${metaOf(s.n+1).name}`:"No next surah",disabled:s.n>=114,onclick:()=>{Reader.stop();openReader(s.n+1)}},icon(I.arrow))),
+      h("button",{class:"iconbtn",type:"button","aria-label":s.n<114?`Next: ${metaOf(s.n+1).name}`:"No next surah",disabled:s.n>=114,onclick:()=>{Reader.stop();openReader(s.n+1)}},icon(I.arrow)))),
     bism,ayahsBox,notice,h("div",{class:"reader-pad"}),h("div",{class:"player"},pbtn,pinfo,trBtn));
 }
 
